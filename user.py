@@ -7,11 +7,11 @@ def greetings():
     welcome = "Hello!\nWelcome to our movie repository. Search through our movies to find information about your favorite film!\n"
     print(welcome)
     
-    # Load data from CSV
+    
     df = pd.read_csv("imdb_top_1000_cleaned.csv")
     movie_bst = load_from_dataframe(df)
     
-    # Build genre index
+    
     genres_list = sorted(list(movie_bst.genre_index.keys()))
     
     return movie_bst, genres_list
@@ -48,7 +48,7 @@ def select_mode(movie_bst: MovieBST, genres_list: list):
     else:
         matches = general_search(movie_bst)
         movie = get_more_information(matches, movie_bst)
-        if movie: # Only print card if a movie is selected
+        if movie: 
             print_movie_card(movie)
         else:
             print("No movie selected or found.")
@@ -73,7 +73,7 @@ def genre_search(genres_list: list, movie_bst: MovieBST):
     chosen_genre = genres_list[choice_num-1]
     print(f"\nThese are the films we have under {chosen_genre.title()}:")
     movies = movie_bst.get_movies_by_genre(chosen_genre)
-    movies.sort(key=lambda m: m.title) # Sort for consistent display
+    movies.sort(key=lambda m: m.title) 
     for idx, movie in enumerate(movies):
         print(f"{idx+1}. {movie.title}")
     
@@ -90,7 +90,7 @@ def suggest_genre(genre: str, movie_bst: MovieBST):
         
         if matches:
             print(f"\nFound {len(matches)} matches!")
-            matches.sort() # Sort matches for consistent display
+            matches.sort() 
             for idx, title in enumerate(matches):
                 print(f"{idx+1}. {title}")
             return matches
@@ -108,7 +108,7 @@ def general_search(movie_bst: MovieBST):
         
         if matches:
             print(f"\nFound {len(matches)} matches!")
-            matches.sort() # Sort matches for consistent display
+            matches.sort() 
             for idx, title in enumerate(matches):
                 print(f"{idx+1}. {title}")
             return matches
