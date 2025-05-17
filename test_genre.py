@@ -2,22 +2,25 @@ import csv
 from collections import defaultdict
 
 class Movie:
-    def __init__(self, movie_id, title, genres, year=None, runtime=None, description=None):
+    def __init__(self, movie_id, title, genres, year=None, rating=None, director=None, stars=None, runtime=None, description=None):
         self.movie_id = movie_id
         self.title = title
         self.genres = set(genres) if genres else set()
         self.year = year
+        self.rating = rating
+        self.director = director
+        self.stars = stars if stars else []
         self.runtime = runtime
         self.description = description
         
     def __repr__(self):
-        return f"Movie(ID={self.movie_id}, Title='{self.title}', Genres={self.genres}, Year={self.year})"
+        return f"Movie(ID={self.movie_id}, Title='{self.title}', Genres={self.genres}, Rating={self.rating})"
 
 class TrieNode:
     def __init__(self):
         self.children = {}
         self.is_end = False
-        self.movies = [] 
+        self.movies = []
 
 class Trie:
     def __init__(self):
@@ -39,7 +42,6 @@ class Trie:
                 return []
             node = node.children[char]
         
-        # Collect all movies with this prefix
         movies = []
         self._collect_movies(node, prefix, movies)
         return movies
@@ -59,59 +61,70 @@ class MovieDatabase:
     
     def load_from_csv(self, filename):
         with open(filename, encoding="utf8") as csvfile:
-            movies = [{key: value for key, value in row.items()}
-                      for row in csv.DictReader(csvfile, skipinitialspace=True)]
+            reader = csv.DictReader(csvfile, skipinitialspace=True)
+            movies = list(reader)
         
+        # Initialize BST with first movie
         first_movie = self._create_movie_object(movies[0], 0)
         self.bst = catalogue_BST(first_movie)
         self._add_to_tries(first_movie)
         
+        # Process remaining movies
         for idx in range(1, len(movies)):
             movie = self._create_movie_object(movies[idx], idx)
             self.bst.insert(movie)
             self._add_to_tries(movie)
     
     def _create_movie_object(self, movie_data, movie_id):
-        
+        # Extract genres from genre_1, genre_2, genre_3 columns
         genres = []
-        if 'Genre' in movie_data:
-            genres = [g.strip() for g in movie_data['Genre'].split(',')]
-        elif 'genre' in movie_data:
-            genres = [g.strip() for g in movie_data['genre'].split(',')]
-        elif 'genres' in movie_data:
-            genres = [g.strip() for g in movie_data['genres'].split(',')]
+        for i in range(1, 4):
+            genre_col = f'genre_{i}'
+            if genre_col in movie_data and movie_data[genre_col].lower() != 'none':
+                genres.append(movie_data[genre_col].strip())
+        
+        # Extract stars
+        stars = []
+        for i in range(1, 5):
+            star_col = f'Star{i}'
+            if star_col in movie_data:
+                stars.append(movie_data[star_col].strip())
         
         self.all_genres.update(genres)
         
         return Movie(
             movie_id=movie_id,
-            title=movie_data.get('Series_Title', '').strip() or 
-                 movie_data.get('Title', '').strip() or
-                 movie_data.get('movie name', '').strip(),
+            title=movie_data['Series_Title'].strip(),
             genres=genres,
             year=movie_data.get('Released_Year', '').strip(),
+            rating=float(movie_data.get('IMDB_Rating', 0)),
+            director=movie_data.get('Director', '').strip(),
+            stars=stars,
             runtime=movie_data.get('Runtime', '').strip(),
-            description=movie_data.get('Overview', '').strip() or 
-                       movie_data.get('Description', '').strip() or
-                       movie_data.get('DETAIL ABOUT MOVIE', '').strip()
+            description="No description available"  # Your dataset doesn't have description
         )
     
     def _add_to_tries(self, movie):
-        
+        # Add to title trie
         self.title_trie.insert(movie.title.lower(), movie)
         
-        
+        # Add to genre tries
         for genre in movie.genres:
             self.genre_tries[genre].insert(movie.title.lower(), movie)
     
     def genre_search(self):
+        if not self.all_genres:
+            print("No genres found in database.")
+            return
+        
         print("\nAvailable genres:")
-        for i, genre in enumerate(sorted(self.all_genres), 1):
+        sorted_genres = sorted(self.all_genres)
+        for i, genre in enumerate(sorted_genres, 1):
             print(f"{i}. {genre}")
         
         try:
             choice = int(input("\nEnter the number of the genre you want to search: ")) - 1
-            selected_genre = sorted(self.all_genres)[choice]
+            selected_genre = sorted_genres[choice]
         except (ValueError, IndexError):
             print("Invalid selection.")
             return
@@ -119,7 +132,7 @@ class MovieDatabase:
         genre_movies = self.genre_tries[selected_genre].search_prefix("")
         print(f"\nMovies in '{selected_genre}':")
         for i, movie in enumerate(genre_movies, 1):
-            print(f"{i}. {movie.title} ({movie.year})")
+            print(f"{i}. {movie.title} ({movie.year}) - Rating: {movie.rating}")
         
         self._handle_movie_selection(genre_movies)
     
@@ -133,7 +146,7 @@ class MovieDatabase:
         
         print("\nMatching movies:")
         for i, movie in enumerate(matching_movies, 1):
-            print(f"{i}. {movie.title} ({movie.year})")
+            print(f"{i}. {movie.title} ({movie.year}) - Rating: {movie.rating}")
         
         self._handle_movie_selection(matching_movies)
     
@@ -149,12 +162,12 @@ class MovieDatabase:
             movie = movies[int(choice)-1]
             print(f"\nTitle: {movie.title}")
             print(f"Year: {movie.year}")
+            print(f"Rating: {movie.rating}")
+            print(f"Director: {movie.director}")
+            print(f"Stars: {', '.join(movie.stars)}")
             print(f"Genres: {', '.join(movie.genres)}")
             print(f"Runtime: {movie.runtime}")
-            
-            desc_choice = input("\nWould you like to see the description? (y/n): ").lower()
-            if desc_choice == 'y':
-                print(f"\nDescription: {movie.description}")
+            print(f"Description: {movie.description}")
         except (ValueError, IndexError):
             print("Invalid selection.")
 
@@ -212,5 +225,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-#Note Genre don't work 
