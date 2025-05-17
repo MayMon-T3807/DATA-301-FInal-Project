@@ -10,8 +10,7 @@ class Movie:
         self.rating = rating
         self.director = director
         self.stars = stars if stars else []
-        self.runtime = runtime
-        self.description = description
+
         
     def __repr__(self):
         return f"Movie(ID={self.movie_id}, Title='{self.title}', Genres={self.genres}, Rating={self.rating})"
@@ -76,14 +75,12 @@ class MovieDatabase:
             self._add_to_tries(movie)
     
     def _create_movie_object(self, movie_data, movie_id):
-        # Extract genres from genre_1, genre_2, genre_3 columns
         genres = []
         for i in range(1, 4):
             genre_col = f'genre_{i}'
             if genre_col in movie_data and movie_data[genre_col].lower() != 'none':
                 genres.append(movie_data[genre_col].strip())
-        
-        # Extract stars
+    
         stars = []
         for i in range(1, 5):
             star_col = f'Star{i}'
@@ -100,15 +97,12 @@ class MovieDatabase:
             rating=float(movie_data.get('IMDB_Rating', 0)),
             director=movie_data.get('Director', '').strip(),
             stars=stars,
-            runtime=movie_data.get('Runtime', '').strip(),
-            description="No description available"  # Your dataset doesn't have description
+            runtime=movie_data.get('Runtime', '').strip(),  
         )
     
     def _add_to_tries(self, movie):
-        # Add to title trie
         self.title_trie.insert(movie.title.lower(), movie)
         
-        # Add to genre tries
         for genre in movie.genres:
             self.genre_tries[genre].insert(movie.title.lower(), movie)
     
