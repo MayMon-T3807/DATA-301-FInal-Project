@@ -63,12 +63,10 @@ class MovieDatabase:
             reader = csv.DictReader(csvfile, skipinitialspace=True)
             movies = list(reader)
         
-        # Initialize BST with first movie
         first_movie = self._create_movie_object(movies[0], 0)
         self.bst = catalogue_BST(first_movie)
         self._add_to_tries(first_movie)
         
-        # Process remaining movies
         for idx in range(1, len(movies)):
             movie = self._create_movie_object(movies[idx], idx)
             self.bst.insert(movie)
@@ -160,8 +158,7 @@ class MovieDatabase:
             print(f"Director: {movie.director}")
             print(f"Stars: {', '.join(movie.stars)}")
             print(f"Genres: {', '.join(movie.genres)}")
-            print(f"Runtime: {movie.runtime}")
-            print(f"Description: {movie.description}")
+            
         except (ValueError, IndexError):
             print("Invalid selection.")
 
@@ -197,7 +194,7 @@ class catalogue_BST:
 
 def main():
     db = MovieDatabase()
-    db.load_from_csv("imdb_top_1000_cleaned.csv")
+    db.load_from_csv("imdb_top_1000_cleaned.csv") 
     
     while True:
         print("\n===== Movie Search =====")
@@ -205,7 +202,7 @@ def main():
         print("2. General Search")
         print("3. Exit")
         
-        choice = input("\nEnter your choice (1-3): ")
+        choice = input("\nEnter your choice to search a movie(1-3): ")
         
         if choice == "1":
             db.genre_search()
