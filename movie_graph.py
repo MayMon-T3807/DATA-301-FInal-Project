@@ -1,26 +1,22 @@
 class Movie:
-    def __init__(self, movie_id, title, genres):
+    def __init__(self, movie_id, title, genres, director, actors):
         self.movie_id = movie_id
         self.title = title
         self.genres = set(genres)
+        self.director = director.strip().lower()
+        self.actors = set(actor.strip().lower() for actor in actors)
 
     def __repr__(self):
-        return f"Movie(ID={self.movie_id}, Title='{self.title}')"
+        return f"Movie(Title='{self.title}')"
     
 class MovieGraph:
     def __init__(self):
         self.movies = {}  # movie_id -> Movie
         self.adj_list = {}  # movie_id -> {neighbor_id: similarity_score}
 
-    # Normalization titles
-    def _normalize(self, title):
-        return title.strip().lower()
-
-    # Create
     def add_movie(self, movie):
-        key = self._normalize(movie.title)
-        self.movies[key] = movie
-        self.adj_list[key] = {}
+        self.movies[movie.movie_id] = movie
+        self.adj_list[movie.movie_id] = {}  # Store IDs, not titles
 
     def add_similarity(self, id1, id2, score):
         if id1 not in self.movies or id2 not in self.movies:
@@ -29,14 +25,17 @@ class MovieGraph:
         self.adj_list[id1][id2] = score
         self.adj_list[id2][id1] = score  # Undirected graph
 
-    # Read
     def get_movie(self, title):
-        return self.movies.get(self._normalize(title))
+        normalized_title = title.strip().lower()
+        for movie in self.movies.values():
+            if movie.title.lower() == normalized_title:
+                return movie
+        return None  # If not found
 
     def get_similar_movies(self, movie_id):
         neighbors = self.adj_list.get(movie_id, {})
         return sorted(neighbors.items(), key=lambda x: x[1], reverse=True)
-
+    
     # Update
     def update_movie(self, movie_id, title=None, genres=None):
         if movie_id not in self.movies:
@@ -68,7 +67,8 @@ class MovieGraph:
     def delete_similarity(self, id1, id2):
         self.adj_list.get(id1, {}).pop(id2, None)
         self.adj_list.get(id2, {}).pop(id1, None)
-   
+
+# Import Movie Dataset from CSV with Pandas   
 import pandas as pd
 
 df = pd.read_csv("imdb_top_1000_cleaned.csv")
@@ -80,10 +80,11 @@ def get_genres(row):
 graph = MovieGraph()
 
 for idx, row in df.iterrows():
-    movie_id = idx
     title = row['Series_Title']
     genres = get_genres(row)
-    movie = Movie(movie_id, title, genres)
+    director = row["Director"]
+    actors = [row["Star1"], row["Star2"], row["Star3"], row["Star4"]]
+    movie = Movie(idx, title, genres, director, actors)
     graph.add_movie(movie)
 
 def jaccard_similarity(set1, set2):
@@ -91,27 +92,41 @@ def jaccard_similarity(set1, set2):
     union = set1.union(set2)
     return len(intersection) / len(union) if union else 0
 
-movie_ids = list(graph.movies.keys())
+def combined_similarity(movie1, movie2, weights=None):
+    if weights is None:
+        weights = {"genre": 0.5, "actors": 0.3, "director": 0.2}
 
-for i in range(len(movie_ids)):
-    for j in range(i + 1, len(movie_ids)):
-        id1 = movie_ids[i]
-        id2 = movie_ids[j]
+    genre_sim = jaccard_similarity(movie1.genres, movie2.genres)
+    actor_sim = jaccard_similarity(movie1.actors, movie2.actors)
+    director_sim = 1.0 if movie1.director == movie2.director else 0.0
 
-        genres1 = graph.movies[id1].genres
-        genres2 = graph.movies[id2].genres
+    combined = (
+        weights["genre"] * genre_sim +
+        weights["actors"] * actor_sim +
+        weights["director"] * director_sim
+    )
+    return combined
 
-        sim = jaccard_similarity(genres1, genres2)
+titles = list(graph.movies.keys())
 
-        if sim > 0.3:
+for i in range(len(titles)):
+    for j in range(i + 1, len(titles)):
+        id1 = titles[i]
+        id2 = titles[j]
+
+        movie1 = graph.movies[id1]
+        movie2 = graph.movies[id2]
+        sim = combined_similarity(movie1, movie2)
+
+        if sim > 0.1:
             graph.add_similarity(id1, id2, sim)
 
-title = (input("Enter the name of the movie you like: "))
+title = input("Enter the name of the movie you like: ").strip().lower()
 movie = graph.get_movie(title)
 
 if movie:
-    print(f"Recommendations for: {movie}")
-    for similar_title, score in graph.get_similar_movies(title)[:5]:
-        print(f"  {graph.get_movie(similar_title)} with similarity {score:.2f}")
+    print(f"Recommendations for:{movie}")
+    for similar_key, score in graph.get_similar_movies(movie.movie_id)[:5]:
+        print(f"  {graph.movies[similar_key].title} --> {score:.2f}")
 else:
     print(f"Movie '{title}' not found in the graph.")
