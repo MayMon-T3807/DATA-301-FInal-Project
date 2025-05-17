@@ -14,7 +14,7 @@ if __name__ == "__main__":
         print(node.movie)
     else:
         print("Movie not found")
-    #print(movie_bst.get_movies_by_genre("Drama")[3:7])
+
     
    
     # testing for CREATE 
