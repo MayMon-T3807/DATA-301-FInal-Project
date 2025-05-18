@@ -126,7 +126,7 @@ movie = graph.get_movie(title)
 
 if movie:
     print(f"Recommendations for:{movie}")
-    for similar_key, score in graph.get_similar_movies(movie.movie_id)[:5]:
+    for similar_key, score in graph.get_similar_movies(movie.movie_id)[:10]:
         print(f"  {graph.movies[similar_key].title} --> {score:.2f}")
 else:
     print(f"Movie '{title}' not found in the graph.")

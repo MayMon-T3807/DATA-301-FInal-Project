@@ -1,28 +1,123 @@
 import streamlit as st
-import pandas as pd
-from movie_graph import MovieGraph, Movie  # Import your existing recommendation system
+from movie_recommender import MovieRecommendationSystem
 
-if __name__ == "__main__":
-    # Load dataset
-    df = pd.read_csv("imdb_top_1000_cleaned.csv")
+# Cache the system instance to avoid reloading on every refresh
+@st.cache_resource
+def load_system():
+    csv_file = "imdb_top_1000_cleaned.csv"  # Ensure the CSV file is in the same directory
+    system = MovieRecommendationSystem(csv_file)
+    return system
 
-    # Initialize movie graph
-    graph = MovieGraph()
-    for idx, row in df.iterrows():
-        title = row['Series_Title']
-        genres = list(set([row['genre_1'], row['genre_2'], row['genre_3']]))
-        director = row["Director"]
-        actors = [row["Star1"], row["Star2"], row["Star3"], row["Star4"]]
-        movie = Movie(idx, title, genres, director, actors)
-        graph.add_movie(movie)
+# Load the system
+system = load_system()
 
-    # Run recommendation example
-    title = input("Enter the name of the movie you like: ").strip().lower()
-    movie = graph.get_movie(title)
+st.title("IMDB's Movie Recommendation System")
+st.subheader("By May Mon Thant & Thant Thaw Tun")
+st.video("film_loop.mp4")  
 
-    if movie:
-        print(f"Recommendations for: {movie.title}")
-        for similar_key, score in graph.get_similar_movies(movie.movie_id)[:5]:
-            print(f"- {graph.movies[similar_key].title} with similarity {score:.2f}")
-    else:
-        print(f"Movie '{title}' not found in the database.")
+# Sidebar: choose an action
+action = st.sidebar.radio("Choose an action", ["Search by Title", "Search by Genre", "Get Recommendations"])
+
+if action == "Search by Title":
+    st.header("Search Movie by Title")
+    title_prefix = st.text_input("Enter the beginning of a movie title")
+    if title_prefix:
+        matching_movies = system.db.title_trie.search_prefix(title_prefix.lower())
+        if matching_movies:
+            movie_options = [f"{movie.title} ({movie.year})" for movie in matching_movies]
+            chosen = st.selectbox("Select a movie", movie_options)
+            selected_movie = next((m for m in matching_movies if f"{m.title} ({m.year})" == chosen), None)
+            if selected_movie:
+                st.subheader("Movie Details")
+                st.write(f"**Title:** {selected_movie.title}")
+                st.write(f"**Year:** {selected_movie.year}")
+                st.write(f"**Rating:** {selected_movie.rating}")
+                st.write(f"**Director:** {selected_movie.director}")
+                st.write(f"**Actors:** {', '.join(selected_movie.actors)}")
+                st.write(f"**Genres:** {', '.join(selected_movie.genres)}")
+                if st.button("Get Recommendations for this movie"):
+                    recs = system.graph.get_similar_movies(selected_movie.movie_id)
+                    if recs:
+                        st.subheader("Recommendations")
+                        for sim_id, score in recs[:10]:
+                            sim_movie = system.graph.movies[sim_id]
+                            st.markdown(f"""
+                            **Title:** {sim_movie.title}  
+                            **Year:** {sim_movie.year}  
+                            **Rating:** {sim_movie.rating}  
+                            **Director:** {sim_movie.director.capitalize()}  
+                            **Actors:** {', '.join(actor.capitalize() for actor in sim_movie.actors)}  
+                            **Genres:** {', '.join(sim_movie.genres)}  
+                            **Similarity Score:** {score:.2f}
+                            """)
+                            st.markdown("---")  # This adds a horizontal line separator
+                    else:
+                        st.write("No recommendations found.")
+        else:
+            st.write("No movies found with that title prefix.")
+
+elif action == "Search by Genre":
+    st.header("Search Movies by Genre")
+    genres = sorted(system.db.all_genres)
+    selected_genre = st.selectbox("Select a genre", genres)
+    if selected_genre:
+        movies_in_genre = system.db.genre_tries[selected_genre].search_prefix("")
+        if movies_in_genre:
+            movie_options = [f"{movie.title} ({movie.year})" for movie in movies_in_genre]
+            chosen = st.selectbox("Select a movie", movie_options)
+            selected_movie = next((m for m in movies_in_genre if f"{m.title} ({m.year})" == chosen), None)
+            if selected_movie:
+                st.subheader("Movie Details")
+                st.write(f"**Title:** {selected_movie.title}")
+                st.write(f"**Year:** {selected_movie.year}")
+                st.write(f"**Rating:** {selected_movie.rating}")
+                st.write(f"**Director:** {selected_movie.director}")
+                st.write(f"**Actors:** {', '.join(selected_movie.actors)}")
+                st.write(f"**Genres:** {', '.join(selected_movie.genres)}")
+                if st.button("Get Recommendations for this movie"):
+                    recs = system.graph.get_similar_movies(selected_movie.movie_id)
+                    if recs:
+                        st.subheader("Recommendations")
+                        for sim_id, score in recs[:10]:
+                            sim_movie = system.graph.movies[sim_id]
+                            st.markdown(f"""
+                            **Title:** {sim_movie.title}  
+                            **Year:** {sim_movie.year}  
+                            **Rating:** {sim_movie.rating}  
+                            **Director:** {sim_movie.director.capitalize()}  
+                            **Actors:** {', '.join(actor.capitalize() for actor in sim_movie.actors)}  
+                            **Genres:** {', '.join(sim_movie.genres)}  
+                            **Similarity Score:** {score:.2f}
+                            """)
+                            st.markdown("---") 
+                    else:
+                        st.write("No recommendations found.")
+        else:
+            st.write("No movies found in this genre.")
+
+elif action == "Get Recommendations":
+    st.header("Get Recommendations by Movie Title")
+    movie_title = st.text_input("Enter the full movie title for recommendations").strip().lower()
+    if movie_title:
+        movie = system.graph.get_movie(movie_title)
+        if movie:
+            st.subheader(f"Recommendations for {movie.title}:")
+            recs = system.graph.get_similar_movies(movie.movie_id)
+            if recs:
+                st.subheader("Recommendations")
+                for sim_id, score in recs[:10]:
+                    sim_movie = system.graph.movies[sim_id]
+                    st.markdown(f"""
+                    **Title:** {sim_movie.title}  
+                    **Year:** {sim_movie.year}  
+                    **Rating:** {sim_movie.rating}  
+                    **Director:** {sim_movie.director.capitalize()}  
+                    **Actors:** {', '.join(actor.capitalize() for actor in sim_movie.actors)}  
+                    **Genres:** {', '.join(sim_movie.genres)}  
+                    **Similarity Score:** {score:.2f}
+                    """)
+                    st.markdown("---") 
+            else:
+                st.write("No recommendations found.")
+        else:
+            st.write("Movie not found in the system.")
