@@ -12,11 +12,11 @@ def load_system():
 system = load_system()
 
 st.title("IMDB's Movie Recommendation System")
-st.subheader("By May Mon Thant & Thant Thaw Tun")
+st.write("*By May Mon Thant & Thant Thaw Tun*")
 st.video("film_loop.mp4")  
 
 # Sidebar: choose an action
-action = st.sidebar.radio("Choose an action", ["Search by Title", "Search by Genre", "Get Recommendations"])
+action = st.sidebar.radio("Choose an action", ["Search by Title", "Search by Genre", "Get Recommendations", "Search by Preferences"])
 
 if action == "Search by Title":
     st.header("Search Movie by Title")
@@ -121,3 +121,25 @@ elif action == "Get Recommendations":
                 st.write("No recommendations found.")
         else:
             st.write("Movie not found in the system.")
+
+elif action == "Search by Preferences":
+    preferred_director = st.text_input("Enter your favorite director (optional):").strip().lower()
+    preferred_actor = st.text_input("Enter your favorite actor (optional):").strip().lower()
+
+    if preferred_director or preferred_actor:
+        movie_scores = []  # Store (score, movie) tuples
+        for movie in system.db.movies.values():
+            score = 0
+            if preferred_director and movie.director == preferred_director:
+                score += 2
+            if preferred_actor and preferred_actor in movie.actors:
+                score += 1
+            
+            if score > 0:
+                movie_scores.append((score, movie))
+        
+        movie_scores.sort(reverse=True, key=lambda x: x[0])  # Sort by priority
+        st.subheader("Top Matches Based on Preferences")
+        for score, movie in movie_scores[:10]:  # Show top 10
+            st.write(f"{movie.title} ({movie.year}) - {movie.rating}")
+

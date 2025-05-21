@@ -223,6 +223,32 @@ class MovieDatabase:
         except (ValueError, IndexError):
             print("Invalid selection.")
             return None
+        
+    def search_by_preference(self):
+        preferred_director = input("Enter a director's name (or press Enter to skip): ").strip().lower()
+        preferred_actor = input("Enter an actor's name (or press Enter to skip): ").strip().lower()
+        
+        movie_scores = []  # Store tuples (score, movie)
+
+        for movie in self.movies.values():
+            score = 0
+            if preferred_director and movie.director == preferred_director:
+                score += 2
+            if preferred_actor and preferred_actor in movie.actors:
+                score += 1
+            
+            if score > 0:
+                movie_scores.append((score, movie))
+
+        # Sort the list by score in descending order
+        movie_scores.sort(reverse=True, key=lambda x: x[0])
+
+        if movie_scores:
+            print("\nTop matching movies:")
+            for score, movie in movie_scores:
+                print(f"{movie.title} ({movie.year}) - Rating: {movie.rating}")
+        else:
+            print("No matching movies found.")
 
     def display_movie_details(self, movie):
         print(f"\nTitle: {movie.title}")
@@ -286,8 +312,11 @@ class MovieRecommendationSystem:
             print("1. Search movie by title")
             print("2. Search movie by genre")
             print("3. Get movie recommendations")
-            print("4. Exit")
-            choice = input("Enter your choice (1-4): ").strip()
+            print("4. Search movies by director/actors preference")  # New Option
+            print("5. Exit")
+            
+            choice = input("Enter your choice (1-5): ").strip()
+            
             if choice == "1":
                 movie = self.db.general_search()
                 if movie:
@@ -302,7 +331,9 @@ class MovieRecommendationSystem:
                         self.show_recommendations_for_movie(movie)
             elif choice == "3":
                 self.get_recommendations()
-            elif choice == "4":
+            elif choice == "4":  # Trigger the new preference-based search
+                self.db.search_by_preference()
+            elif choice == "5":
                 print("Goodbye!")
                 break
             else:

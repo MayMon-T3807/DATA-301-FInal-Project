@@ -1,11 +1,6 @@
-# movie_recommendation_system.py
-
 import csv
 from collections import defaultdict
 
-# ------------------------------
-# Unified Movie Object
-# ------------------------------
 class Movie:
     def __init__(self, movie_id, title, genres, director, actors, year=None, rating=None, runtime=None, description=None):
         self.movie_id = movie_id
@@ -21,9 +16,6 @@ class Movie:
     def __repr__(self):
         return f"Movie(ID={self.movie_id}, Title='{self.title}', Rating={self.rating})"
 
-# ------------------------------
-# Trie for efficient prefix search
-# ------------------------------
 class TrieNode:
     def __init__(self):
         self.children = {}
@@ -59,9 +51,6 @@ class Trie:
         for child in node.children.values():
             self._collect_movies(child, movies)
 
-# ------------------------------
-# Binary Search Tree (BST) for movie titles
-# ------------------------------
 class CatalogueBST:
     def __init__(self, movie, depth=1):
         self.movie = movie
@@ -92,9 +81,6 @@ class CatalogueBST:
         else:
             return None
 
-# ------------------------------
-# Graph for movie similarity recommendations
-# ------------------------------
 class MovieGraph:
     def __init__(self):
         self.movies = {}    # movie_id -> Movie
@@ -122,9 +108,6 @@ class MovieGraph:
         neighbors = self.adj_list.get(movie_id, {})
         return sorted(neighbors.items(), key=lambda x: x[1], reverse=True)
 
-# ------------------------------
-# Similarity Functions
-# ------------------------------
 def jaccard_similarity(set1, set2):
     intersection = set1.intersection(set2)
     union = set1.union(set2)
@@ -138,9 +121,6 @@ def combined_similarity(movie1, movie2, weights=None):
     director_sim = 1.0 if movie1.director == movie2.director else 0.0
     return weights["genre"] * genre_sim + weights["actors"] * actor_sim + weights["director"] * director_sim
 
-# ------------------------------
-# Movie Database: Loads CSV and builds search structures
-# ------------------------------
 class MovieDatabase:
     def __init__(self):
         self.bst = None
@@ -185,9 +165,6 @@ class MovieDatabase:
         runtime = movie_data.get('Runtime', '').strip() if 'Runtime' in movie_data else ""
         return Movie(movie_id, title, genres, director, actors, year, rating, runtime)
 
-# ------------------------------
-# Integrated Movie Recommendation System
-# ------------------------------
 class MovieRecommendationSystem:
     def __init__(self, csv_file):
         self.db = MovieDatabase()
