@@ -1,0 +1,68 @@
+flowchart TD
+    A[Start Program] --> B[Load CSV Data]
+    B --> C[Initialize Movie Database]
+    C --> D[Build Data Structures]
+    
+    D --> E[Create BST for Movies]
+    D --> F[Build Title Trie]
+    D --> G[Build Genre Tries]
+    D --> H[Create Movie Graph]
+    
+    E --> I[Main Menu]
+    F --> I
+    G --> I
+    H --> I
+    
+    I --> J{User Choice}
+    
+    J -->|1| K[Search by Title]
+    J -->|2| L[Search by Genre]
+    J -->|3| M[Get Recommendations]
+    J -->|4| N[Exit Program]
+    
+    K --> O[Enter Title Prefix]
+    O --> P[Search Title Trie]
+    P --> Q{Movies Found?}
+    Q -->|Yes| R[Display Movie List]
+    Q -->|No| S[No Movies Found]
+    
+    R --> T[User Selects Movie]
+    T --> U[Display Movie Details]
+    U --> V{Want Recommendations?}
+    V -->|Yes| W[Show Recommendations]
+    V -->|No| I
+    
+    L --> X[Display Available Genres]
+    X --> Y[User Selects Genre]
+    Y --> Z[Search Genre Trie]
+    Z --> AA{Movies Found?}
+    AA -->|Yes| BB[Display Genre Movies]
+    AA -->|No| CC[No Movies Found]
+    
+    BB --> DD[User Selects Movie]
+    DD --> EE[Display Movie Details]
+    EE --> FF{Want Recommendations?}
+    FF -->|Yes| W
+    FF -->|No| I
+    
+    M --> GG[Enter Movie Title]
+    GG --> HH[Search Movie Graph]
+    HH --> II{Movie Found?}
+    II -->|Yes| W
+    II -->|No| JJ[Movie Not Found]
+    
+    W --> KK[Calculate Similarity Scores]
+    KK --> LL[Sort by Similarity]
+    LL --> MM[Display Top 10 Recommendations]
+    MM --> I
+    
+    S --> I
+    CC --> I
+    JJ --> I
+    N --> NN[End Program]
+    
+    style A fill:#e1f5fe
+    style NN fill:#ffebee
+    style I fill:#f3e5f5
+    style J fill:#fff3e0
+    style W fill:#e8f5e8
